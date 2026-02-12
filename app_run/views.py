@@ -1,7 +1,11 @@
 from django.conf import settings
 from django.shortcuts import render
+from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from app_run.models import Run
+from app_run.serializers import RunSerializer
 
 
 # Create your views here.
@@ -13,3 +17,7 @@ def company_details(request):
         'contacts': settings.CONTACTS,
     }
     return Response(details)
+
+class RunViewSet(viewsets.ModelViewSet):
+    queryset = Run.objects.all()
+    serializer_class = RunSerializer
