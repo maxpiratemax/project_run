@@ -1,9 +1,11 @@
 from django.conf import settings
 from django.contrib.auth.models import User
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import NotFound
-from rest_framework.filters import SearchFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status as drf_status
@@ -22,16 +24,30 @@ def company_details(request):
     return Response(details)
 
 
+class RunPagination(PageNumberPagination):
+    page_size_query_param = 'size'
+
+
 class RunViewSet(viewsets.ModelViewSet):
     queryset = Run.objects.select_related('athlete').all()
     serializer_class = RunSerializer
+    pagination_class = RunPagination
+    filter_backends = [OrderingFilter, DjangoFilterBackend]
+    ordering_fields = ['created_at']
+    filterset_fields = ['status', 'athlete']
+
+
+class UserPagination(PageNumberPagination):
+    page_size_query_param = 'size'
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    filter_backends = [SearchFilter]
+    pagination_class = UserPagination
+    filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['first_name', 'last_name']
+    ordering_fields = ['date_joined']
 
     def get_queryset(self):
         qs = self.queryset.filter(is_superuser=False)
