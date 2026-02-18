@@ -11,7 +11,7 @@ class Run(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     comment = models.TextField(verbose_name="Комментарий")
-    athlete = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Атлет")
+    athlete = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Атлет",  related_name='runs')
 
     status = models.CharField(
         max_length=20,
