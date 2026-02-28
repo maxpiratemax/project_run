@@ -3,6 +3,24 @@ from django.contrib.auth.models import User
 
 
 # Create your models here.
+class Challenge(models.Model):
+    full_name = models.CharField(max_length=255, verbose_name="Название челленджа")
+    athlete = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Атлет",
+        related_name='challenges'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+
+    class Meta:
+        verbose_name = "Челлендж"
+        verbose_name_plural = "Челленджи"
+
+    def __str__(self):
+        return f"{self.full_name} — {self.athlete}"
+
+
 class Run(models.Model):
     class Status(models.TextChoices):
         INIT = 'init'

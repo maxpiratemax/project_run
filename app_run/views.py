@@ -10,8 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status as drf_status
 
-from app_run.models import Run
-from app_run.serializers import RunSerializer, UserSerializer
+from app_run.models import Run, Challenge
+from app_run.serializers import RunSerializer, UserSerializer, ChallengeSerializer
 
 
 @api_view(['GET'])
@@ -110,6 +110,19 @@ class RunStopAPIView(APIView):
         run.status = Run.Status.FINISHED
         run.save(update_fields=["status"])
 
+        finished_runs_count = Run.objects.filter(
+            athlete=run.athlete,
+            status=Run.Status.FINISHED
+        ).count()
+
+        QUANTITY_TO_ACHIEVEMENTS = 10
+
+        if finished_runs_count == QUANTITY_TO_ACHIEVEMENTS:
+            Challenge.objects.get_or_create(
+                athlete=run.athlete,
+                full_name=f"Сделай {QUANTITY_TO_ACHIEVEMENTS} Забегов!"
+            )
+
         return Response(
             {
                 "detail": "Забег завершён.",
@@ -118,3 +131,15 @@ class RunStopAPIView(APIView):
             },
             status=drf_status.HTTP_200_OK,
         )
+
+
+class ChallengePagination(PageNumberPagination):
+    page_size_query_param = 'size'
+
+
+class ChallengeViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Challenge.objects.select_related('athlete').all()
+    serializer_class = ChallengeSerializer
+    pagination_class = ChallengePagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['athlete']
