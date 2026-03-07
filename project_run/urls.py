@@ -21,7 +21,15 @@ from django.conf.urls.static import static
 from django.conf import settings
 from rest_framework.routers import DefaultRouter
 
-from app_run.views import company_details, RunViewSet, UserViewSet, RunStartAPIView, RunStopAPIView, ChallengeViewSet
+from app_run.views import (
+    company_details,
+    RunViewSet,
+    UserViewSet,
+    RunStartAPIView,
+    RunStopAPIView,
+    ChallengeViewSet,
+    AthleteInfoAPIView,
+)
 
 router = DefaultRouter()
 router.register('api/runs', RunViewSet)
@@ -33,6 +41,7 @@ urlpatterns = [
     path('api/company_details/', company_details),
     path('api/runs/<int:run_id>/start/', RunStartAPIView.as_view()),
     path('api/runs/<int:run_id>/stop/', RunStopAPIView.as_view()),
+    path('api/athlete_info/<int:user_id>/', AthleteInfoAPIView.as_view()),
     path('', include(router.urls)),
     path('', include(debug_toolbar_urls()))
 ]

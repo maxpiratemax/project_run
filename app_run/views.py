@@ -10,8 +10,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status as drf_status
 
-from app_run.models import Run, Challenge
-from app_run.serializers import RunSerializer, UserSerializer, ChallengeSerializer
+from app_run.models import Run, Challenge, AthleteInfo
+from app_run.serializers import (
+    RunSerializer,
+    UserSerializer,
+    ChallengeSerializer,
+    AthleteInfoSerializer,
+)
 
 
 @api_view(['GET'])
@@ -143,3 +148,43 @@ class ChallengeViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = ChallengePagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['athlete']
+
+
+class AthleteInfoAPIView(APIView):
+    def _get_user_or_404(self, user_id: int) -> User:
+        try:
+            return User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            raise NotFound("Пользователь не найден")
+
+    def get(self, request, user_id: int):
+        user = self._get_user_or_404(user_id)
+        athlete_info, _ = AthleteInfo.objects.get_or_create(user=user)
+        serializer = AthleteInfoSerializer(athlete_info)
+        return Response(serializer.data, status=drf_status.HTTP_200_OK)
+
+    def put(self, request, user_id: int):
+        user = self._get_user_or_404(user_id)
+        athlete_info, _ = AthleteInfo.objects.get_or_create(user=user)
+
+        if 'weight' in request.data:
+            try:
+                weight = float(request.data['weight'])
+            except (TypeError, ValueError):
+                return Response(
+                    {"detail": "weight должен быть числом > 0 и < 900"},
+                    status=drf_status.HTTP_400_BAD_REQUEST,
+                )
+            if not (0 < weight < 900):
+                return Response(
+                    {"detail": "weight должен быть > 0 и < 900"},
+                    status=drf_status.HTTP_400_BAD_REQUEST,
+                )
+            athlete_info.weight = weight
+
+        if 'goals' in request.data:
+            athlete_info.goals = request.data['goals']
+
+        athlete_info.save()
+        serializer = AthleteInfoSerializer(athlete_info)
+        return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
