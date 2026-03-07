@@ -53,7 +53,7 @@ class AthleteInfo(models.Model):
         related_name="athlete_info",
         verbose_name="Атлет",
     )
-    weight = models.FloatField(default=1)
+    weight = models.IntegerField(default=1)
     goals = models.TextField(blank=True, default="")
 
     class Meta:

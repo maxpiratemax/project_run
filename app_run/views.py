@@ -169,10 +169,10 @@ class AthleteInfoAPIView(APIView):
 
         if 'weight' in request.data:
             try:
-                weight = float(request.data['weight'])
+                weight = int(request.data['weight'])
             except (TypeError, ValueError):
                 return Response(
-                    {"detail": "weight должен быть числом > 0 и < 900"},
+                    {"detail": "weight должен быть целым числом > 0 и < 900"},
                     status=drf_status.HTTP_400_BAD_REQUEST,
                 )
             if not (0 < weight < 900):
