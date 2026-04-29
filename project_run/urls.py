@@ -29,12 +29,14 @@ from app_run.views import (
     RunStopAPIView,
     ChallengeViewSet,
     AthleteInfoAPIView,
+    PositionViewSet,
 )
 
 router = DefaultRouter()
 router.register('api/runs', RunViewSet)
 router.register('api/users', UserViewSet)
 router.register('api/challenges', ChallengeViewSet)
+router.register('api/positions', PositionViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

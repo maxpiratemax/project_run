@@ -62,3 +62,22 @@ class AthleteInfo(models.Model):
 
     def __str__(self):
         return f"AthleteInfo for user_id={self.user_id}"
+
+
+class Position(models.Model):
+    run = models.ForeignKey(
+        Run,
+        on_delete=models.CASCADE,
+        related_name='positions',
+        verbose_name="Забег"
+    )
+    latitude = models.DecimalField(max_digits=6, decimal_places=4, verbose_name="Широта")
+    longitude = models.DecimalField(max_digits=7, decimal_places=4, verbose_name="Долгота")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Позиция"
+        verbose_name_plural = "Позиции"
+
+    def __str__(self):
+        return f"Position {self.id} for run {self.run_id}"

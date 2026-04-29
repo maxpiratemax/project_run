@@ -10,12 +10,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status as drf_status
 
-from app_run.models import Run, Challenge, AthleteInfo
+from app_run.models import Run, Challenge, AthleteInfo, Position
 from app_run.serializers import (
     RunSerializer,
     UserSerializer,
     ChallengeSerializer,
     AthleteInfoSerializer,
+    PositionSerializer,
 )
 
 
@@ -188,3 +189,10 @@ class AthleteInfoAPIView(APIView):
         athlete_info.save()
         serializer = AthleteInfoSerializer(athlete_info)
         return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
+
+
+class PositionViewSet(viewsets.ModelViewSet):
+    queryset = Position.objects.all()
+    serializer_class = PositionSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['run']
