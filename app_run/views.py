@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
+from geopy.distance import distance as geopy_distance
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import NotFound
@@ -18,6 +19,20 @@ from app_run.serializers import (
     AthleteInfoSerializer,
     PositionSerializer,
 )
+
+
+def calculate_run_distance(run: Run) -> float:
+    positions = list(
+        run.positions
+        .order_by('created_at', 'id')
+        .values_list('latitude', 'longitude')
+    )
+    distance = 0
+
+    for start, finish in zip(positions, positions[1:]):
+        distance += geopy_distance(start, finish).km
+
+    return distance
 
 
 @api_view(['GET'])
@@ -114,7 +129,8 @@ class RunStopAPIView(APIView):
             )
 
         run.status = Run.Status.FINISHED
-        run.save(update_fields=["status"])
+        run.distance = calculate_run_distance(run)
+        run.save(update_fields=["status", "distance"])
 
         finished_runs_count = Run.objects.filter(
             athlete=run.athlete,
@@ -134,6 +150,7 @@ class RunStopAPIView(APIView):
                 "detail": "Забег завершён.",
                 "run_id": run.id,
                 "status": run.status,
+                "distance": run.distance,
             },
             status=drf_status.HTTP_200_OK,
         )

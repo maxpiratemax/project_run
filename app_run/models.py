@@ -37,6 +37,7 @@ class Run(models.Model):
         default=Status.INIT,
         verbose_name="Статус забега"
     )
+    distance = models.FloatField(default=0, verbose_name="Дистанция, км")
 
     class Meta:
         verbose_name = "Забег"
