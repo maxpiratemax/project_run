@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from geopy.distance import distance as geopy_distance
 from rest_framework import viewsets
@@ -143,6 +144,18 @@ class RunStopAPIView(APIView):
             Challenge.objects.get_or_create(
                 athlete=run.athlete,
                 full_name=f"Сделай {QUANTITY_TO_ACHIEVEMENTS} Забегов!"
+            )
+
+        DISTANCE_TO_ACHIEVEMENTS = 50
+        total_distance = Run.objects.filter(
+            athlete=run.athlete,
+            status=Run.Status.FINISHED
+        ).aggregate(total_distance=Sum('distance'))['total_distance'] or 0
+
+        if total_distance >= DISTANCE_TO_ACHIEVEMENTS:
+            Challenge.objects.get_or_create(
+                athlete=run.athlete,
+                full_name="Пробеги 50 километров!"
             )
 
         return Response(
