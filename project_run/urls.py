@@ -30,6 +30,8 @@ from app_run.views import (
     ChallengeViewSet,
     AthleteInfoAPIView,
     PositionViewSet,
+    CollectibleItemViewSet,
+    UploadFileAPIView,
 )
 
 router = DefaultRouter()
@@ -37,6 +39,7 @@ router.register('api/runs', RunViewSet)
 router.register('api/users', UserViewSet)
 router.register('api/challenges', ChallengeViewSet)
 router.register('api/positions', PositionViewSet)
+router.register('api/collectible_item', CollectibleItemViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -44,6 +47,7 @@ urlpatterns = [
     path('api/runs/<int:run_id>/start/', RunStartAPIView.as_view()),
     path('api/runs/<int:run_id>/stop/', RunStopAPIView.as_view()),
     path('api/athlete_info/<int:user_id>/', AthleteInfoAPIView.as_view()),
+    path('api/upload_file/', UploadFileAPIView.as_view()),
     path('', include(router.urls)),
     path('', include(debug_toolbar_urls()))
 ]

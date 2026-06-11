@@ -82,3 +82,19 @@ class Position(models.Model):
 
     def __str__(self):
         return f"Position {self.id} for run {self.run_id}"
+
+
+class CollectibleItem(models.Model):
+    name = models.CharField(max_length=255, verbose_name="Название")
+    uid = models.CharField(max_length=255, verbose_name="UID")
+    latitude = models.FloatField(verbose_name="Широта")
+    longitude = models.FloatField(verbose_name="Долгота")
+    picture = models.URLField(verbose_name="Изображение")
+    value = models.IntegerField(verbose_name="Ценность")
+
+    class Meta:
+        verbose_name = "Коллекционный предмет"
+        verbose_name_plural = "Коллекционные предметы"
+
+    def __str__(self):
+        return f"{self.name} ({self.uid})"

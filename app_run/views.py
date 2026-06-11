@@ -5,20 +5,26 @@ from django_filters.rest_framework import DjangoFilterBackend
 from geopy.distance import distance as geopy_distance
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status as drf_status
 
-from app_run.models import Run, Challenge, AthleteInfo, Position
+from app_run.models import Run, Challenge, AthleteInfo, Position, CollectibleItem
 from app_run.serializers import (
     RunSerializer,
     UserSerializer,
     ChallengeSerializer,
     AthleteInfoSerializer,
     PositionSerializer,
+    CollectibleItemSerializer,
+)
+from app_run.services.collectibles import (
+    read_collectible_rows,
+    split_valid_and_invalid,
 )
 
 
@@ -226,3 +232,33 @@ class PositionViewSet(viewsets.ModelViewSet):
     serializer_class = PositionSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['run']
+
+
+class CollectibleItemViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CollectibleItem.objects.all()
+    serializer_class = CollectibleItemSerializer
+
+
+class UploadFileAPIView(APIView):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        file_obj = request.FILES.get('file')
+        if file_obj is None:
+            raise ParseError("Файл не передан. Передайте xlsx-файл в поле 'file'.")
+
+        parsed_rows = read_collectible_rows(file_obj)
+        if not parsed_rows:
+            raise ParseError("Файл пустой или не содержит строк с данными.")
+
+        valid_items, invalid_rows = split_valid_and_invalid(parsed_rows)
+        if valid_items:
+            CollectibleItem.objects.bulk_create(valid_items)
+
+        return Response(
+            {
+                "created": len(valid_items),
+                "invalid_rows": [list(row) for row in invalid_rows],
+            },
+            status=drf_status.HTTP_200_OK,
+        )

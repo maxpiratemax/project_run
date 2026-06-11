@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Run, Challenge, AthleteInfo, Position
+from .models import Run, Challenge, AthleteInfo, Position, CollectibleItem
 
 
 class AthleteDataSerializer(serializers.ModelSerializer):
@@ -68,3 +68,9 @@ class PositionSerializer(serializers.ModelSerializer):
         if not (-180 <= value <= 180):
             raise serializers.ValidationError("Долгота должна быть в диапазоне [-180.0, 180.0].")
         return value
+
+
+class CollectibleItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectibleItem
+        fields = ['id', 'name', 'uid', 'latitude', 'longitude', 'picture', 'value']
