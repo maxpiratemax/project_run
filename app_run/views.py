@@ -256,9 +256,6 @@ class UploadFileAPIView(APIView):
             CollectibleItem.objects.bulk_create(valid_items)
 
         return Response(
-            {
-                "created": len(valid_items),
-                "invalid_rows": [list(row) for row in invalid_rows],
-            },
+            [list(row) for row in invalid_rows],
             status=drf_status.HTTP_200_OK,
         )
