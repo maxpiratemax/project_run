@@ -1,5 +1,7 @@
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
+
+from app_run.services.geo import latitude_validators, longitude_validators
 
 
 # Create your models here.
@@ -72,8 +74,18 @@ class Position(models.Model):
         related_name='positions',
         verbose_name="Забег"
     )
-    latitude = models.DecimalField(max_digits=6, decimal_places=4, verbose_name="Широта")
-    longitude = models.DecimalField(max_digits=7, decimal_places=4, verbose_name="Долгота")
+    latitude = models.DecimalField(
+        max_digits=6,
+        decimal_places=4,
+        verbose_name="Широта",
+        validators=latitude_validators(),
+    )
+    longitude = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        verbose_name="Долгота",
+        validators=longitude_validators(),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

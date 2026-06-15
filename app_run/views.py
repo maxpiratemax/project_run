@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
+from app_run.services.geo import is_valid_coordinate
 from geopy.distance import distance as geopy_distance
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
@@ -48,9 +49,18 @@ COLLECTION_RADIUS_METERS = 100
 
 def collect_nearby_items(position: Position) -> None:
     athlete = position.run.athlete
-    position_point = (float(position.latitude), float(position.longitude))
+    position_latitude = float(position.latitude)
+    position_longitude = float(position.longitude)
+
+    if not is_valid_coordinate(position_latitude, position_longitude):
+        return
+
+    position_point = (position_latitude, position_longitude)
 
     for item in CollectibleItem.objects.all():
+        if not is_valid_coordinate(item.latitude, item.longitude):
+            continue
+
         item_point = (item.latitude, item.longitude)
         distance_meters = geopy_distance(position_point, item_point).m
         if distance_meters <= COLLECTION_RADIUS_METERS:

@@ -1,5 +1,12 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+
+from app_run.services.geo import (
+    LATITUDE_MAX,
+    LATITUDE_MIN,
+    LONGITUDE_MAX,
+    LONGITUDE_MIN,
+)
 from .models import Run, Challenge, AthleteInfo, Position, CollectibleItem
 
 
@@ -60,13 +67,17 @@ class PositionSerializer(serializers.ModelSerializer):
         return value
 
     def validate_latitude(self, value):
-        if not (-90 <= value <= 90):
-            raise serializers.ValidationError("Широта должна быть в диапазоне [-90.0, 90.0].")
+        if not (LATITUDE_MIN <= value <= LATITUDE_MAX):
+            raise serializers.ValidationError(
+                f"Широта должна быть в диапазоне [{LATITUDE_MIN}, {LATITUDE_MAX}]."
+            )
         return value
 
     def validate_longitude(self, value):
-        if not (-180 <= value <= 180):
-            raise serializers.ValidationError("Долгота должна быть в диапазоне [-180.0, 180.0].")
+        if not (LONGITUDE_MIN <= value <= LONGITUDE_MAX):
+            raise serializers.ValidationError(
+                f"Долгота должна быть в диапазоне [{LONGITUDE_MIN}, {LONGITUDE_MAX}]."
+            )
         return value
 
 
@@ -76,13 +87,17 @@ class CollectibleItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'uid', 'latitude', 'longitude', 'picture', 'value']
 
     def validate_latitude(self, value):
-        if not (-90 <= value <= 90):
-            raise serializers.ValidationError("Широта должна быть в диапазоне [-90.0, 90.0].")
+        if not (LATITUDE_MIN <= value <= LATITUDE_MAX):
+            raise serializers.ValidationError(
+                f"Широта должна быть в диапазоне [{LATITUDE_MIN}, {LATITUDE_MAX}]."
+            )
         return value
 
     def validate_longitude(self, value):
-        if not (-180 <= value <= 180):
-            raise serializers.ValidationError("Долгота должна быть в диапазоне [-180.0, 180.0].")
+        if not (LONGITUDE_MIN <= value <= LONGITUDE_MAX):
+            raise serializers.ValidationError(
+                f"Долгота должна быть в диапазоне [{LONGITUDE_MIN}, {LONGITUDE_MAX}]."
+            )
         return value
 
 
