@@ -84,3 +84,15 @@ class CollectibleItemSerializer(serializers.ModelSerializer):
         if not (-180 <= value <= 180):
             raise serializers.ValidationError("Долгота должна быть в диапазоне [-180.0, 180.0].")
         return value
+
+
+class UserDetailSerializer(UserSerializer):
+    items = CollectibleItemSerializer(
+        many=True,
+        read_only=True,
+        source='collectible_items',
+    )
+
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = UserSerializer.Meta.fields + ['items']

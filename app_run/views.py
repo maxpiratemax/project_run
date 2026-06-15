@@ -17,6 +17,7 @@ from app_run.models import Run, Challenge, AthleteInfo, Position, CollectibleIte
 from app_run.serializers import (
     RunSerializer,
     UserSerializer,
+    UserDetailSerializer,
     ChallengeSerializer,
     AthleteInfoSerializer,
     PositionSerializer,
@@ -40,6 +41,20 @@ def calculate_run_distance(run: Run) -> float:
         distance += geopy_distance(start, finish).km
 
     return distance
+
+
+COLLECTION_RADIUS_METERS = 100
+
+
+def collect_nearby_items(position: Position) -> None:
+    athlete = position.run.athlete
+    position_point = (float(position.latitude), float(position.longitude))
+
+    for item in CollectibleItem.objects.all():
+        item_point = (item.latitude, item.longitude)
+        distance_meters = geopy_distance(position_point, item_point).m
+        if distance_meters <= COLLECTION_RADIUS_METERS:
+            item.athletes.add(athlete)
 
 
 @api_view(['GET'])
@@ -77,8 +92,17 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['first_name', 'last_name']
     ordering_fields = ['date_joined']
 
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return UserDetailSerializer
+        return super().get_serializer_class()
+
     def get_queryset(self):
         qs = self.queryset.filter(is_superuser=False)
+
+        if self.action == 'retrieve':
+            qs = qs.prefetch_related('collectible_items')
+
         user_type = self.request.query_params.get('type', None)
         if user_type == "coach":
             qs = qs.filter(is_staff=True)
@@ -232,6 +256,10 @@ class PositionViewSet(viewsets.ModelViewSet):
     serializer_class = PositionSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['run']
+
+    def perform_create(self, serializer):
+        position = serializer.save()
+        collect_nearby_items(position)
 
 
 class CollectibleItemViewSet(viewsets.ReadOnlyModelViewSet):

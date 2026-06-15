@@ -91,6 +91,12 @@ class CollectibleItem(models.Model):
     longitude = models.FloatField(verbose_name="Долгота")
     picture = models.URLField(verbose_name="Изображение")
     value = models.IntegerField(verbose_name="Ценность")
+    athletes = models.ManyToManyField(
+        User,
+        related_name='collectible_items',
+        blank=True,
+        verbose_name="Атлеты, собравшие предмет",
+    )
 
     class Meta:
         verbose_name = "Коллекционный предмет"
