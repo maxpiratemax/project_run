@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Sum
+from django.db.models import Max, Min, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from app_run.services.geo import is_valid_coordinate
 from geopy.distance import distance as geopy_distance
@@ -33,7 +33,7 @@ from app_run.services.collectibles import (
 def calculate_run_distance(run: Run) -> float:
     positions = list(
         run.positions
-        .order_by('created_at', 'id')
+        .order_by('date_time', 'id')
         .values_list('latitude', 'longitude')
     )
     distance = 0
@@ -171,7 +171,13 @@ class RunStopAPIView(APIView):
 
         run.status = Run.Status.FINISHED
         run.distance = calculate_run_distance(run)
-        run.save(update_fields=["status", "distance"])
+
+        time_stats = run.positions.aggregate(min_dt=Min('date_time'), max_dt=Max('date_time'))
+        min_dt = time_stats['min_dt']
+        max_dt = time_stats['max_dt']
+        run.run_time_seconds = int((max_dt - min_dt).total_seconds()) if min_dt and max_dt else 0
+
+        run.save(update_fields=["status", "distance", "run_time_seconds"])
 
         finished_runs_count = Run.objects.filter(
             athlete=run.athlete,
@@ -204,6 +210,7 @@ class RunStopAPIView(APIView):
                 "run_id": run.id,
                 "status": run.status,
                 "distance": run.distance,
+                "run_time_seconds": run.run_time_seconds,
             },
             status=drf_status.HTTP_200_OK,
         )

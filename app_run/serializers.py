@@ -57,9 +57,11 @@ class AthleteInfoSerializer(serializers.ModelSerializer):
 
 
 class PositionSerializer(serializers.ModelSerializer):
+    date_time = serializers.DateTimeField(format='%Y-%m-%dT%H:%M:%S.%f')
+
     class Meta:
         model = Position
-        fields = ['id', 'run', 'latitude', 'longitude', 'created_at']
+        fields = ['id', 'run', 'latitude', 'longitude', 'date_time', 'created_at']
 
     def validate_run(self, value):
         if value.status != Run.Status.IN_PROGRESS:

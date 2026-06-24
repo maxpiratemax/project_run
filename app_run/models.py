@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 from app_run.services.geo import latitude_validators, longitude_validators
 
@@ -40,6 +41,7 @@ class Run(models.Model):
         verbose_name="Статус забега"
     )
     distance = models.FloatField(default=0, verbose_name="Дистанция, км")
+    run_time_seconds = models.IntegerField(default=0, verbose_name="Время забега, сек")
 
     class Meta:
         verbose_name = "Забег"
@@ -86,6 +88,7 @@ class Position(models.Model):
         verbose_name="Долгота",
         validators=longitude_validators(),
     )
+    date_time = models.DateTimeField(default=timezone.now, verbose_name="Дата и время с трекера")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
