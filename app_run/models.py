@@ -42,6 +42,7 @@ class Run(models.Model):
     )
     distance = models.FloatField(default=0, verbose_name="Дистанция, км")
     run_time_seconds = models.IntegerField(default=0, verbose_name="Время забега, сек")
+    speed = models.FloatField(default=0, verbose_name="Средняя скорость, м/с")
 
     class Meta:
         verbose_name = "Забег"
@@ -90,6 +91,8 @@ class Position(models.Model):
     )
     date_time = models.DateTimeField(default=timezone.now, verbose_name="Дата и время с трекера")
     created_at = models.DateTimeField(auto_now_add=True)
+    speed = models.FloatField(default=0, verbose_name="Скорость, м/с")
+    distance = models.FloatField(default=0, verbose_name="Пройденное расстояние, км")
 
     class Meta:
         verbose_name = "Позиция"

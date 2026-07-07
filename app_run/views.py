@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Count, Max, Min, Sum, Q
+from django.db.models import Avg, Count, Max, Min, Sum, Q
 from django_filters.rest_framework import DjangoFilterBackend
 from app_run.services.geo import is_valid_coordinate
 from geopy.distance import distance as geopy_distance
@@ -182,7 +182,11 @@ class RunStopAPIView(APIView):
         max_dt = time_stats['max_dt']
         run.run_time_seconds = int((max_dt - min_dt).total_seconds()) if min_dt and max_dt else 0
 
-        run.save(update_fields=["status", "distance", "run_time_seconds"])
+        speed_stats = run.positions.aggregate(avg_speed=Avg('speed'))
+        avg_speed = speed_stats['avg_speed'] or 0
+        run.speed = round(avg_speed, 2)
+
+        run.save(update_fields=["status", "distance", "run_time_seconds", "speed"])
 
         finished_runs_count = Run.objects.filter(
             athlete=run.athlete,
@@ -280,7 +284,27 @@ class PositionViewSet(viewsets.ModelViewSet):
     filterset_fields = ['run']
 
     def perform_create(self, serializer):
-        position = serializer.save()
+        run = serializer.validated_data['run']
+        latitude = float(serializer.validated_data['latitude'])
+        longitude = float(serializer.validated_data['longitude'])
+        date_time = serializer.validated_data['date_time']
+
+        prev = run.positions.order_by('-date_time', '-id').first()
+
+        if prev is None:
+            speed = 0.0
+            distance = 0.0
+        else:
+            prev_lat = float(prev.latitude)
+            prev_lon = float(prev.longitude)
+            segment_m = geopy_distance(
+                (prev_lat, prev_lon), (latitude, longitude)
+            ).meters
+            dt_seconds = (date_time - prev.date_time).total_seconds()
+            speed = round(segment_m / dt_seconds, 2) if dt_seconds > 0 else 0.0
+            distance = round(prev.distance + segment_m / 1000.0, 2)
+
+        position = serializer.save(speed=speed, distance=distance)
         collect_nearby_items(position)
 
 
