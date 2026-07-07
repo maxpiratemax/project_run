@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Max, Min, Sum
+from django.db.models import Count, Max, Min, Sum, Q
 from django_filters.rest_framework import DjangoFilterBackend
 from app_run.services.geo import is_valid_coordinate
 from geopy.distance import distance as geopy_distance
@@ -95,7 +95,12 @@ class UserPagination(PageNumberPagination):
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.annotate(
+        runs_finished=Count(
+            'runs',
+            filter=Q(runs__status='finished'),
+        )
+    )
     serializer_class = UserSerializer
     pagination_class = UserPagination
     filter_backends = [SearchFilter, OrderingFilter]

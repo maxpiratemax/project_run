@@ -26,7 +26,7 @@ class RunSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
-    runs_finished = serializers.SerializerMethodField()
+    runs_finished = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = User
@@ -37,9 +37,6 @@ class UserSerializer(serializers.ModelSerializer):
             return 'coach'
 
         return 'athlete'
-
-    def get_runs_finished(self, obj):
-        return obj.runs.filter(status='finished').count()
 
 
 class ChallengeSerializer(serializers.ModelSerializer):
