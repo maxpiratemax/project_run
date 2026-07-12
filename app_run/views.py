@@ -213,6 +213,17 @@ class RunStopAPIView(APIView):
                 full_name="Пробеги 50 километров!"
             )
 
+        DISTANCE_TO_TIME_ACHIEVEMENT_KM = 2
+        MAX_TIME_FOR_DISTANCE_ACHIEVEMENT_SECONDS = 10 * 60
+        if (
+            run.distance >= DISTANCE_TO_TIME_ACHIEVEMENT_KM
+            and run.run_time_seconds <= MAX_TIME_FOR_DISTANCE_ACHIEVEMENT_SECONDS
+        ):
+            Challenge.objects.get_or_create(
+                athlete=run.athlete,
+                full_name="2 километра за 10 минут!"
+            )
+
         return Response(
             {
                 "detail": "Забег завершён.",
