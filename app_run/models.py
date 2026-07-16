@@ -122,3 +122,27 @@ class CollectibleItem(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.uid})"
+
+
+class Subscribe(models.Model):
+    athlete = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+        verbose_name="Атлет",
+    )
+    coach = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='subscribers',
+        verbose_name="Тренер",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата подписки")
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+        unique_together = ['athlete', 'coach']
+
+    def __str__(self):
+        return f"{self.athlete} → {self.coach}"

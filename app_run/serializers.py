@@ -7,7 +7,7 @@ from app_run.services.geo import (
     LONGITUDE_MAX,
     LONGITUDE_MIN,
 )
-from .models import Run, Challenge, AthleteInfo, Position, CollectibleItem
+from .models import Run, Challenge, AthleteInfo, Position, CollectibleItem, Subscribe
 
 
 class AthleteDataSerializer(serializers.ModelSerializer):
@@ -110,3 +110,56 @@ class UserDetailSerializer(UserSerializer):
     class Meta(UserSerializer.Meta):
         model = User
         fields = UserSerializer.Meta.fields + ['items']
+
+
+class CoachDetailSerializer(UserSerializer):
+    items = CollectibleItemSerializer(
+        many=True,
+        read_only=True,
+        source='collectible_items',
+    )
+    athletes = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = UserSerializer.Meta.fields + ['items', 'athletes']
+
+    def get_athletes(self, obj):
+        return list(
+            Subscribe.objects.filter(coach=obj)
+            .values_list('athlete_id', flat=True)
+        )
+
+
+class AthleteDetailSerializer(UserSerializer):
+    items = CollectibleItemSerializer(
+        many=True,
+        read_only=True,
+        source='collectible_items',
+    )
+    coach = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = UserSerializer.Meta.fields + ['items', 'coach']
+
+    def get_coach(self, obj):
+        subscription = (
+            Subscribe.objects.filter(athlete=obj)
+            .select_related('coach')
+            .first()
+        )
+        if subscription is None:
+            return None
+        return subscription.coach_id
+
+
+class SubscribeSerializer(serializers.Serializer):
+    athlete = serializers.IntegerField()
+
+    def validate_athlete(self, value):
+        try:
+            User.objects.get(pk=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Атлет не найден")
+        return value

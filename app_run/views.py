@@ -14,15 +14,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status as drf_status
 
-from app_run.models import Run, Challenge, AthleteInfo, Position, CollectibleItem
+from app_run.models import Run, Challenge, AthleteInfo, Position, CollectibleItem, Subscribe
 from app_run.serializers import (
     RunSerializer,
     UserSerializer,
     UserDetailSerializer,
+    CoachDetailSerializer,
+    AthleteDetailSerializer,
     ChallengeSerializer,
     AthleteInfoSerializer,
     PositionSerializer,
     CollectibleItemSerializer,
+    SubscribeSerializer,
 )
 from app_run.services.collectibles import (
     read_collectible_rows,
@@ -112,11 +115,31 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             return UserDetailSerializer
         return super().get_serializer_class()
 
+    def get_serializer(self, *args, **kwargs):
+        if self.action != 'retrieve':
+            return super().get_serializer(*args, **kwargs)
+
+        instance = args[0] if args else kwargs.get('instance')
+        if isinstance(instance, User):
+            if instance.is_staff:
+                serializer_class = CoachDetailSerializer
+            else:
+                serializer_class = AthleteDetailSerializer
+        else:
+            serializer_class = UserDetailSerializer
+
+        kwargs.setdefault('context', self.get_serializer_context())
+        return serializer_class(*args, **kwargs)
+
     def get_queryset(self):
         qs = self.queryset.filter(is_superuser=False)
 
         if self.action == 'retrieve':
-            qs = qs.prefetch_related('collectible_items')
+            qs = qs.prefetch_related(
+                'collectible_items',
+                'subscriptions',
+                'subscribers',
+            )
 
         user_type = self.request.query_params.get('type', None)
         if user_type == "coach":
@@ -125,6 +148,53 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(is_staff=False)
 
         return qs
+
+
+class SubscribeToCoachAPIView(APIView):
+    def post(self, request, coach_id: int):
+        try:
+            coach = User.objects.get(pk=coach_id)
+        except User.DoesNotExist:
+            raise NotFound("Тренер не найден")
+
+        if not coach.is_staff:
+            return Response(
+                {"detail": "Подписываться можно только на Тренеров."},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = SubscribeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        athlete_id = serializer.validated_data['athlete']
+
+        try:
+            athlete = User.objects.get(pk=athlete_id)
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "Атлет не найден."},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        if athlete.is_staff:
+            return Response(
+                {"detail": "Подписываться могут только Атлеты."},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        _, created = Subscribe.objects.get_or_create(
+            athlete=athlete,
+            coach=coach,
+        )
+        if not created:
+            return Response(
+                {"detail": "Подписка уже оформлена."},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"detail": "Подписка оформлена."},
+            status=drf_status.HTTP_200_OK,
+        )
 
 
 class RunStartAPIView(APIView):
