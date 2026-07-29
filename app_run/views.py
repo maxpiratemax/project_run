@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Avg, Count, Max, Min, Sum, Q
@@ -78,6 +80,33 @@ def company_details(request):
         'contacts': settings.CONTACTS,
     }
     return Response(details)
+
+
+@api_view(['GET'])
+def challenges_summary(request):
+    rows = Challenge.objects.values(
+        'full_name',
+        'athlete__id',
+        'athlete__first_name',
+        'athlete__last_name',
+        'athlete__username',
+    )
+
+    grouped = defaultdict(dict)
+    for row in rows:
+        name = row['full_name']
+        aid = row['athlete__id']
+        grouped[name][aid] = {
+            'id': aid,
+            'full_name': f"{row['athlete__first_name']} {row['athlete__last_name']}".strip(),
+            'username': row['athlete__username'],
+        }
+
+    result = [
+        {'name_to_display': name, 'athletes': list(athletes.values())}
+        for name, athletes in grouped.items()
+    ]
+    return Response(result)
 
 
 class RunPagination(PageNumberPagination):
