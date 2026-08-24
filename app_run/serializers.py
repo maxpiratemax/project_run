@@ -27,10 +27,20 @@ class RunSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     runs_finished = serializers.IntegerField(read_only=True)
+    rating = serializers.FloatField(read_only=True, allow_null=True)
 
     class Meta:
         model = User
-        fields = ['id', 'date_joined', 'username', 'last_name', 'first_name', 'type', 'runs_finished']
+        fields = [
+            'id',
+            'date_joined',
+            'username',
+            'last_name',
+            'first_name',
+            'type',
+            'runs_finished',
+            'rating',
+        ]
 
     def get_type(self, obj):
         if obj.is_staff:
@@ -125,10 +135,7 @@ class CoachDetailSerializer(UserSerializer):
         fields = UserSerializer.Meta.fields + ['items', 'athletes']
 
     def get_athletes(self, obj):
-        return list(
-            Subscribe.objects.filter(coach=obj)
-            .values_list('athlete_id', flat=True)
-        )
+        return [subscription.athlete_id for subscription in obj.subscribers.all()]
 
 
 class AthleteDetailSerializer(UserSerializer):
@@ -144,11 +151,7 @@ class AthleteDetailSerializer(UserSerializer):
         fields = UserSerializer.Meta.fields + ['items', 'coach']
 
     def get_coach(self, obj):
-        subscription = (
-            Subscribe.objects.filter(athlete=obj)
-            .select_related('coach')
-            .first()
-        )
+        subscription = next(iter(obj.subscriptions.all()), None)
         if subscription is None:
             return None
         return subscription.coach_id
@@ -163,3 +166,14 @@ class SubscribeSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("Атлет не найден")
         return value
+
+
+class RateCoachSerializer(serializers.Serializer):
+    athlete = serializers.IntegerField()
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+
+    def validate_athlete(self, value):
+        try:
+            return User.objects.get(pk=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Атлет не найден")

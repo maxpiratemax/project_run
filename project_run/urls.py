@@ -33,6 +33,7 @@ from app_run.views import (
     CollectibleItemViewSet,
     UploadFileAPIView,
     SubscribeToCoachAPIView,
+    RateCoachAPIView,
     challenges_summary,
 )
 
@@ -52,6 +53,7 @@ urlpatterns = [
     path('api/athlete_info/<int:user_id>/', AthleteInfoAPIView.as_view()),
     path('api/upload_file/', UploadFileAPIView.as_view()),
     path('api/subscribe_to_coach/<int:coach_id>/', SubscribeToCoachAPIView.as_view()),
+    path('api/rate_coach/<int:coach_id>/', RateCoachAPIView.as_view()),
     path('', include(router.urls)),
     path('', include(debug_toolbar_urls()))
 ]

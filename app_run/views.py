@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Avg, Count, Max, Min, Sum, Q
+from django.db.models import Avg, Count, FloatField, Max, Min, OuterRef, Q, Subquery, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from app_run.services.geo import is_valid_coordinate
 from geopy.distance import distance as geopy_distance
@@ -28,6 +28,7 @@ from app_run.serializers import (
     PositionSerializer,
     CollectibleItemSerializer,
     SubscribeSerializer,
+    RateCoachSerializer,
 )
 from app_run.services.collectibles import (
     read_collectible_rows,
@@ -131,7 +132,17 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         runs_finished=Count(
             'runs',
             filter=Q(runs__status='finished'),
-        )
+        ),
+        rating=Subquery(
+            Subscribe.objects.filter(
+                coach_id=OuterRef('pk'),
+                rating__isnull=False,
+            )
+            .values('coach_id')
+            .annotate(avg_rating=Avg('rating'))
+            .values('avg_rating'),
+            output_field=FloatField(),
+        ),
     )
     serializer_class = UserSerializer
     pagination_class = UserPagination
@@ -222,6 +233,45 @@ class SubscribeToCoachAPIView(APIView):
 
         return Response(
             {"detail": "Подписка оформлена."},
+            status=drf_status.HTTP_200_OK,
+        )
+
+
+class RateCoachAPIView(APIView):
+    def post(self, request, coach_id: int):
+        try:
+            coach = User.objects.get(pk=coach_id)
+        except User.DoesNotExist:
+            raise NotFound("Тренер не найден")
+
+        if not coach.is_staff:
+            return Response(
+                {"detail": "Оценивать можно только Тренеров."},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = RateCoachSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        athlete = serializer.validated_data['athlete']
+
+        if athlete.is_staff:
+            return Response(
+                {"detail": "Оценивать могут только Атлеты."},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        updated = Subscribe.objects.filter(
+            athlete=athlete,
+            coach=coach,
+        ).update(rating=serializer.validated_data['rating'])
+        if not updated:
+            return Response(
+                {"detail": "Атлет не подписан на Тренера."},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"detail": "Оценка сохранена."},
             status=drf_status.HTTP_200_OK,
         )
 
